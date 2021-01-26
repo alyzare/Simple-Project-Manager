@@ -21,8 +21,9 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> fetchData() async {
-    _projects = await Service.getProjects();
-    _profiles = await Service.getProfiles();
+    Service service = Service();
+    _projects = await service.getProjects();
+    _profiles = await service.getProfiles();
     _currentProfile = _profiles.isNotEmpty ? _profiles[0] : null;
     setState(() {});
   }
