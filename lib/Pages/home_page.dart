@@ -127,7 +127,7 @@ class _HomeState extends State<Home> {
                 ? List.generate(
                     _profiles.length,
                     (index) => ListTile(
-                      title: Text('${_profiles[index].name}'),
+                      title: Text('_profiles[index].name'),
                       onTap: (){
                         setState(() {
                           _currentProfile = _profiles[index];
