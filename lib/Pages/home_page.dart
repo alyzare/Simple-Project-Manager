@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:my_todo/models/Profile.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_todo/models/Project.dart';
-import 'package:my_todo/api/Service.dart';
+import 'package:my_todo/view_model/view_model_profile.dart';
+import 'package:my_todo/view_model/view_model_show_detail.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -9,24 +10,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  bool _showDetails = false;
   List<Project> _projects = [];
-  List<Profile> _profiles = [];
-  Profile _currentProfile;
-
-  @override
-  void initState() {
-    super.initState();
-    fetchData();
-  }
-
-  Future<void> fetchData() async {
-    Service service = Service();
-    _projects = await service.getProjects();
-    _profiles = await service.getProfiles();
-    _currentProfile = _profiles.isNotEmpty ? _profiles[0] : null;
-    setState(() {});
-  }
+  ViewModelProfile viewModelProfile = ViewModelProfile();
+  ViewModelShowDetail viewModelShowDetail = ViewModelShowDetail();
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +32,9 @@ class _HomeState extends State<Home> {
 
   RefreshIndicator _buildProjectsListView() {
     return RefreshIndicator(
-      onRefresh: fetchData,
+      onRefresh: () async {
+        viewModelProfile..getProfile();
+      },
       child: ListView(
         children: List.generate(
           _projects.length,
@@ -83,7 +71,8 @@ class _HomeState extends State<Home> {
                     ),
                   ),
                   onTap: () {
-                    Navigator.pushNamed(context, '/project',arguments: _projects[index]);
+                    Navigator.pushNamed(context, '/project',
+                        arguments: _projects[index]);
                   },
                 )
               ],
@@ -96,69 +85,106 @@ class _HomeState extends State<Home> {
 
   Drawer _buildMenuDrawer() {
     return Drawer(
-      child: ListView(
-        children: [
-          UserAccountsDrawerHeader(
-            onDetailsPressed: () {
-              setState(() {
-                _showDetails = !_showDetails;
-              });
-            },
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Text(
-                (_currentProfile != null)
-                    ? _currentProfile.name.substring(0, 1)
-                    : 'A',
-                style: TextStyle(
-                  fontSize: 30,
-                  color: Colors.green[700],
+      child: BlocBuilder(
+        cubit: viewModelProfile..getProfile(),
+        builder: (context, state) {
+          if (state is LoadingProfileState) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          } else if (state is SuccessProfileState) {
+            return ListView(
+              children: [
+                changeAccount(),
+                acconts(state.profiles),
+                ListTile(
+                  leading: Icon(Icons.home),
+                  title: Text("Projects"),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
                 ),
+                ListTile(
+                  leading: Icon(Icons.account_circle),
+                  title: Text("Profile"),
+                  onTap: () {
+                    Navigator.pushNamed(context, '/profile',
+                        arguments: viewModelProfile.currentProfile);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.archive),
+                  title: Text("Closed Projects"),
+                  onTap: () {},
+                ),
+              ],
+            );
+            // Container(color: Colors.green,width: 100,height: 200,);
+          } else if (state is FailProfileState) {
+            return Center(
+              child: Text(state.error),
+            );
+          } else
+            return Container(
+              color: Colors.red,
+              width: 100,
+              height: 200,
+            );
+        },
+      ),
+    );
+  }
+
+  Widget acconts(model) {
+    return BlocBuilder(
+      cubit: viewModelShowDetail,
+      builder: (context, state) => Visibility(
+        visible: viewModelShowDetail.state.isShow,
+        child: ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            itemCount: model.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                title: Text(model[index].name),
+                onTap: () {
+                  viewModelProfile.currentProfile = model[index];
+                },
+              );
+            }),
+      ),
+    );
+  }
+
+  Widget changeAccount() {
+    return BlocBuilder(
+      cubit: viewModelShowDetail,
+      builder: (context, state) {
+        return UserAccountsDrawerHeader(
+          onDetailsPressed: () {
+            viewModelShowDetail
+              ..showDetail(isShow: viewModelShowDetail.state.isShow);
+          },
+          currentAccountPicture: CircleAvatar(
+            backgroundColor: Colors.white,
+            child: Text(
+              viewModelProfile.checkProfile
+                  ? viewModelProfile.currentProfile.name.substring(0, 1)
+                  : 'A',
+              style: TextStyle(
+                fontSize: 30,
+                color: Colors.green[700],
               ),
             ),
-            accountName:
-                Text((_currentProfile != null) ? _currentProfile.name : 'ALY'),
-            accountEmail: Text((_currentProfile != null)
-                ? _currentProfile.email
-                : 'alyzarezadeh@gmail.com'),
           ),
-          Column(
-            children: _showDetails
-                ? List.generate(
-                    _profiles.length,
-                    (index) => ListTile(
-                      title: Text(_profiles[index].name),
-                      onTap: (){
-                        setState(() {
-                          _currentProfile = _profiles[index];
-                        });
-                      },
-                    ),
-                  )
-                : [
-                    ListTile(
-                      leading: Icon(Icons.home),
-                      title: Text("Projects"),
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.account_circle),
-                      title: Text("Profile"),
-                      onTap: () {
-                        Navigator.pushNamed(context, '/profile',arguments: _currentProfile);
-                      },
-                    ),
-                    ListTile(
-                      leading: Icon(Icons.archive),
-                      title: Text("Closed Projects"),
-                      onTap: () {},
-                    ),
-                  ],
-          ),
-        ],
-      ),
+          accountName: Text(viewModelProfile.checkProfile
+              ? viewModelProfile.currentProfile.name
+              : 'ALY'),
+          accountEmail: Text(viewModelProfile.checkProfile
+              ? viewModelProfile.currentProfile.email
+              : 'alyzarezadeh@gmail.com'),
+        );
+      },
     );
   }
 
