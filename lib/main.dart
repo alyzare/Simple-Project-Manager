@@ -3,9 +3,9 @@ import 'package:my_todo/Pages/home_page.dart';
 import 'package:my_todo/Pages/profile_page.dart';
 import 'package:my_todo/Pages/project_details.dart';
 
-void main() => runApp(ToDo());
+void main() => runApp(MyApp());
 
-class ToDo extends StatelessWidget {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     
