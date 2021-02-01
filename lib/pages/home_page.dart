@@ -4,12 +4,7 @@ import 'package:my_todo/view_model/view_model_profile.dart';
 import 'package:my_todo/view_model/view_model_project.dart';
 import 'package:my_todo/view_model/view_model_show_detail.dart';
 
-class Home extends StatefulWidget {
-  @override
-  _HomeState createState() => _HomeState();
-}
-
-class _HomeState extends State<Home> {
+class Home extends StatelessWidget {
   ViewModelProfile viewModelProfile = ViewModelProfile();
   ViewModelShowDetail viewModelShowDetail = ViewModelShowDetail();
   ViewModelProject viewModelProject = ViewModelProject();
@@ -43,7 +38,7 @@ class _HomeState extends State<Home> {
               child: ListView(
                 children: List.generate(
                   state.projects.length,
-                  (index) => Card(
+                      (index) => Card(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.circular(5)),
                     ),
@@ -106,7 +101,6 @@ class _HomeState extends State<Home> {
     return Drawer(
       child: BlocBuilder(
         cubit: viewModelProfile..getProfile(),
-        //TODO -> erase & add (..getProfile())
         builder: (context, state) {
           if (state is LoadingProfileState) {
             return Center(
@@ -169,6 +163,7 @@ class _HomeState extends State<Home> {
                 title: Text(model[index].name),
                 onTap: () {
                   viewModelProfile.currentProfile = model[index];
+                  viewModelShowDetail.change(isShow: viewModelShowDetail.state.isShow);
                 },
               );
             }),
@@ -183,9 +178,9 @@ class _HomeState extends State<Home> {
         return UserAccountsDrawerHeader(
           onDetailsPressed: () {
             viewModelShowDetail
-              ..showDetail(
+              .showDetail(
                   isShow: viewModelShowDetail
-                      .state.isShow); //TODO -> erase & add a dot while running
+                      .state.isShow);
           },
           currentAccountPicture: CircleAvatar(
             backgroundColor: Colors.white,

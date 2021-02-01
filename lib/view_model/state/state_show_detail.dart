@@ -11,3 +11,7 @@ class StateShowDetail extends Equatable {
 class ShowDetailState extends StateShowDetail {
   ShowDetailState(bool isShow) : super(isShow);
 }
+
+class ChangeDetailState extends StateShowDetail {
+  ChangeDetailState(bool isShow) : super(isShow);
+}

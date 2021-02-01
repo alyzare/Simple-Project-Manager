@@ -10,4 +10,9 @@ class ViewModelShowDetail extends Cubit<StateShowDetail> {
   void showDetail({@required bool isShow}) async {
     emit(ShowDetailState(!isShow));
   }
+
+  void change({@required bool isShow}) {
+    emit(ChangeDetailState(isShow));
+    emit(ShowDetailState(!isShow));
+  }
 }
