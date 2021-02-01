@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:my_todo/models/Project.dart';
 import 'package:my_todo/view_model/view_model_profile.dart';
+import 'package:my_todo/view_model/view_model_project.dart';
 import 'package:my_todo/view_model/view_model_show_detail.dart';
 
 class Home extends StatefulWidget {
@@ -10,9 +10,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  List<Project> _projects = [];
   ViewModelProfile viewModelProfile = ViewModelProfile();
   ViewModelShowDetail viewModelShowDetail = ViewModelShowDetail();
+  ViewModelProject viewModelProject = ViewModelProject();
 
   @override
   Widget build(BuildContext context) {
@@ -30,56 +30,75 @@ class _HomeState extends State<Home> {
     );
   }
 
-  RefreshIndicator _buildProjectsListView() {
-    return RefreshIndicator(
-      onRefresh: () async {
-        viewModelProfile..getProfile();
-      },
-      child: ListView(
-        children: List.generate(
-          _projects.length,
-          (index) => Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(5)),
-            ),
-            margin: EdgeInsets.all(5),
-            elevation: 2,
-            color: Colors.green[50],
-            child: Column(
-              children: [
-                Text(
-                  _projects[index].title,
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                ),
-                Divider(
-                  color: Colors.grey[400],
-                ),
-                Text(
-                  _projects[index].details,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.black54,
-                  ),
-                ),
-                SizedBox(height: 2),
-                InkWell(
-                  child: Text(
-                    "More deatails",
-                    style: TextStyle(
-                      color: Colors.green[900],
+  Widget _buildProjectsListView() {
+    return BlocBuilder(
+      cubit: viewModelProject..getProject(),
+      builder: (context, state) {
+        if (state is LoadingProjectState) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        } else if (state is SuccessProjectState) {
+          return RefreshIndicator(
+              child: ListView(
+                children: List.generate(
+                  state.projects.length,
+                  (index) => Card(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(5)),
+                    ),
+                    margin: EdgeInsets.all(5),
+                    elevation: 2,
+                    color: Colors.green[50],
+                    child: Column(
+                      children: [
+                        Text(
+                          state.projects[index].title,
+                          style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w900),
+                        ),
+                        Divider(
+                          color: Colors.grey[400],
+                        ),
+                        Text(
+                          state.projects[index].details,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        InkWell(
+                          child: Text(
+                            "More details",
+                            style: TextStyle(
+                              color: Colors.green[900],
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.pushNamed(context, '/project',
+                                arguments: state.projects[index]);
+                          },
+                        )
+                      ],
                     ),
                   ),
-                  onTap: () {
-                    Navigator.pushNamed(context, '/project',
-                        arguments: _projects[index]);
-                  },
-                )
-              ],
-            ),
-          ),
-        ),
-      ),
+                ),
+              ),
+              onRefresh: () async {
+                viewModelProfile..getProfile();
+                viewModelProject..getProject();
+              });
+        } else if (state is FailProjectState) {
+          return Center(
+            child: Text(state.error),
+          );
+        } else
+          return Container(
+            color: Colors.red,
+          );
+      },
     );
   }
 
@@ -87,6 +106,7 @@ class _HomeState extends State<Home> {
     return Drawer(
       child: BlocBuilder(
         cubit: viewModelProfile..getProfile(),
+        //TODO -> erase & add (..getProfile())
         builder: (context, state) {
           if (state is LoadingProfileState) {
             return Center(
@@ -95,8 +115,8 @@ class _HomeState extends State<Home> {
           } else if (state is SuccessProfileState) {
             return ListView(
               children: [
-                changeAccount(),
-                acconts(state.profiles),
+                _changeAccount(),
+                _accounts(state.profiles),
                 ListTile(
                   leading: Icon(Icons.home),
                   title: Text("Projects"),
@@ -135,7 +155,7 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget acconts(model) {
+  Widget _accounts(model) {
     return BlocBuilder(
       cubit: viewModelShowDetail,
       builder: (context, state) => Visibility(
@@ -156,14 +176,16 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Widget changeAccount() {
+  Widget _changeAccount() {
     return BlocBuilder(
       cubit: viewModelShowDetail,
       builder: (context, state) {
         return UserAccountsDrawerHeader(
           onDetailsPressed: () {
             viewModelShowDetail
-              ..showDetail(isShow: viewModelShowDetail.state.isShow);
+              ..showDetail(
+                  isShow: viewModelShowDetail
+                      .state.isShow); //TODO -> erase & add a dot while running
           },
           currentAccountPicture: CircleAvatar(
             backgroundColor: Colors.white,
